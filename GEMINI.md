@@ -177,3 +177,5 @@ ruff check .
   - Dates are valid and logical
 - Use pathlib, not raw string joins for paths.
 - External paths should be relative or loaded from `config.json`.
+- If you change finish the code base, Please help to push the dev branch and create a pull request.
+--- End of Context from: GEMINI.md ---
