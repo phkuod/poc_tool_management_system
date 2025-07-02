@@ -18,7 +18,7 @@ class OutsourcingQcExtractor:
             df = pd.read_excel(self.input_path)
             self._validate_columns(df)
             return df
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             raise
         except Exception as e:
             raise Exception(f"An error occurred while reading the Excel file: {e}")
