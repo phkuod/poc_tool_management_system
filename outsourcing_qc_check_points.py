@@ -1,21 +1,16 @@
 import pandas as pd
 from datetime import datetime
-import glob
-import os
-from typing import List, Dict, Any
+from pathlib import Path
 
 class OutsourcingQcCheckPoints:
-    def __init__(self, df: pd.DataFrame, target_path: str):
+    def __init__(self, df):
         self.df = df
-        self.target_path = target_path
-        self.failures = []
+        self.today = datetime.now()
+        self.failures = {}
 
-    def get_failures(self) -> List[Dict[str, Any]]:
+    def get_failures(self):
         """
-        Runs all checkpoint rules and returns a list of failures.
-
-        Returns:
-            List[Dict[str, Any]]: A list of all failed rules.
+        Returns a dictionary of all failed rules.
         """
         self._check_package_readiness()
         self._check_final_report()
@@ -24,49 +19,45 @@ class OutsourcingQcCheckPoints:
     def _check_package_readiness(self):
         """
         Rule 1: Package Readiness
-        - Trigger: Today >= Project Start Date + 3 days
-        - Check path: /Target/Path/{Tool Column}/*Tool_Number*
+        Trigger: Today >= Project Start Date + 3 days
+        Check path: /Target/Path/{Tool Column}/*Tool_Number*
         """
-        today = datetime.now()
-        for _, row in self.df.iterrows():
-            if today >= row["Project Start Date"] + pd.Timedelta(days=3):
-                tool_number = row["Tool_Number"]
-                tool_column = row["Tool Column"]
-                expected_path = os.path.join(
-                    self.target_path, tool_column, f"*{tool_number}*"
-                )
-                if not glob.glob(expected_path):
-                    self.failures.append(
-                        {
-                            "Tool_Number": tool_number,
-                            "Project": tool_column,
-                            "Fail Reason": "Package Readiness Check Failed",
-                            "Responsible User": row["Responsible User"],
-                        }
-                    )
+        rule_name = "Package Readiness"
+        self.failures[rule_name] = []
+
+        for index, row in self.df.iterrows():
+            if self.today >= row['Project Start Date'] + pd.Timedelta(days=3):
+                tool_column = row['Tool Column']
+                tool_number = row['Tool_Number']
+                target_path = Path(f"Target/Path/{tool_column}")
+                
+                if not any(target_path.glob(f"*{tool_number}*")):
+                    self.failures[rule_name].append({
+                        'Tool_Number': tool_number,
+                        'Project': tool_column,
+                        'Fail Reason': 'Package not found',
+                        'Responsible User': row['Responsible User']
+                    })
 
     def _check_final_report(self):
         """
         Rule 2: Final Report
-        - Trigger: Customer schedule - Today <= 7 days
-        - Check path: /Target/Path/{Tool Column}/Final_Report_*{Tool_Number}*.pdf
+        Trigger: Customer schedule - Today <= 7 days
+        Check path: /Target/Path/{Tool Column}/Final_Report_*{Tool_Number}*.pdf
         """
-        today = datetime.now()
-        for _, row in self.df.iterrows():
-            if (row["Customer schedule"] - today).days <= 7:
-                tool_number = row["Tool_Number"]
-                tool_column = row["Tool Column"]
-                expected_path = os.path.join(
-                    self.target_path,
-                    tool_column,
-                    f"Final_Report_*{tool_number}*.pdf",
-                )
-                if not glob.glob(expected_path):
-                    self.failures.append(
-                        {
-                            "Tool_Number": tool_number,
-                            "Project": tool_column,
-                            "Fail Reason": "Final Report Check Failed",
-                            "Responsible User": row["Responsible User"],
-                        }
-                    )
+        rule_name = "Final Report"
+        self.failures[rule_name] = []
+
+        for index, row in self.df.iterrows():
+            if (row['Customer schedule'] - self.today).days <= 7:
+                tool_column = row['Tool Column']
+                tool_number = row['Tool_Number']
+                target_path = Path(f"Target/Path/{tool_column}")
+
+                if not any(target_path.glob(f"Final_Report_*{tool_number}*.pdf")):
+                    self.failures[rule_name].append({
+                        'Tool_Number': tool_number,
+                        'Project': tool_column,
+                        'Fail Reason': 'Final report not found',
+                        'Responsible User': row['Responsible User']
+                    })
