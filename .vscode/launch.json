@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Outsourcing QC System",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/outsourcing_qc_system.py",
+            "args": ["schedule.xlsx"],
+            "console": "integratedTerminal"
+        }
+    ]
+}
