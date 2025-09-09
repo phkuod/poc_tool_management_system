@@ -1,63 +1,44 @@
 import pandas as pd
 from datetime import datetime
 from pathlib import Path
+from checkpoint_strategies import CheckpointRegistry, PackageReadinessCheckpoint, FinalReportCheckpoint
 
 class OutsourcingQcCheckPoints:
-    def __init__(self, df):
+    def __init__(self, df, vendor_mapping=None):
         self.df = df
         self.today = datetime.now()
-        self.failures = {}
+        self.vendor_mapping = vendor_mapping or {}
+        
+        # Initialize the checkpoint registry with default checkpoints
+        CheckpointRegistry.clear()
+        CheckpointRegistry.register(PackageReadinessCheckpoint())
+        CheckpointRegistry.register(FinalReportCheckpoint(vendor_mapping))
 
     def get_failures(self):
         """
         Returns a dictionary of all failed rules.
+        Now uses the extensible checkpoint system internally.
         """
-        self._check_package_readiness()
-        self._check_final_report()
-        return self.failures
+        failures = {}
+        
+        for checkpoint in CheckpointRegistry.get_all_checkpoints():
+            failures[checkpoint.name] = []
+            
+            for index, row in self.df.iterrows():
+                if checkpoint.should_check(row, self.today):
+                    checkpoint_failures = checkpoint.execute_check(row, self.today)
+                    failures[checkpoint.name].extend(checkpoint_failures)
+        
+        return failures
 
-    def _check_package_readiness(self):
-        """
-        Rule 1: Package Readiness
-        Trigger: Today >= Project Start Date + 3 days
-        Check path: /Target/Path/{Tool Column}/*Tool_Number*
-        """
-        rule_name = "Package Readiness"
-        self.failures[rule_name] = []
-
-        for index, row in self.df.iterrows():
-            if self.today >= row['Project Start Date'] + pd.Timedelta(days=3):
-                tool_column = row['Tool Column']
-                tool_number = row['Tool_Number']
-                target_path = Path(f"Target/Path/{tool_column}")
-                
-                if not any(target_path.glob(f"*{tool_number}*")):
-                    self.failures[rule_name].append({
-                        'Tool_Number': tool_number,
-                        'Project': tool_column,
-                        'Fail Reason': 'Package not found',
-                        'Responsible User': row['Responsible User']
-                    })
-
-    def _check_final_report(self):
-        """
-        Rule 2: Final Report
-        Trigger: Customer schedule - Today <= 7 days
-        Check path: /Target/Path/{Tool Column}/Final_Report_*{Tool_Number}*.pdf
-        """
-        rule_name = "Final Report"
-        self.failures[rule_name] = []
-
-        for index, row in self.df.iterrows():
-            if (row['Customer schedule'] - self.today).days <= 7:
-                tool_column = row['Tool Column']
-                tool_number = row['Tool_Number']
-                target_path = Path(f"Target/Path/{tool_column}")
-
-                if not any(target_path.glob(f"Final_Report_*{tool_number}*.pdf")):
-                    self.failures[rule_name].append({
-                        'Tool_Number': tool_number,
-                        'Project': tool_column,
-                        'Fail Reason': 'Final report not found',
-                        'Responsible User': row['Responsible User']
-                    })
+    def add_checkpoint(self, checkpoint):
+        """Add a new checkpoint to the registry."""
+        CheckpointRegistry.register(checkpoint)
+    
+    def remove_checkpoint(self, checkpoint_name: str):
+        """Remove a checkpoint by name from the registry."""
+        CheckpointRegistry.unregister(checkpoint_name)
+    
+    def list_checkpoints(self):
+        """List all registered checkpoint names."""
+        return [cp.name for cp in CheckpointRegistry.get_all_checkpoints()]
