@@ -77,7 +77,16 @@ class TaiwanHolidayFetcher:
                 if item.get('isHoliday', False):
                     date_str = item.get('date')
                     if date_str:
-                        holiday_date = datetime.strptime(date_str, '%Y-%m-%d')
+                        try:
+                            # Try YYYY-MM-DD format first
+                            holiday_date = datetime.strptime(date_str, '%Y-%m-%d')
+                        except ValueError:
+                            try:
+                                # Try YYYYMMDD format as fallback
+                                holiday_date = datetime.strptime(date_str, '%Y%m%d')
+                            except ValueError as e:
+                                logger.warning(f"Could not parse date '{date_str}': {e}")
+                                continue
                         holidays.add(holiday_date)
             
             return holidays
@@ -174,34 +183,39 @@ class TaiwanBusinessDay:
     def add_business_days(self, start_date: datetime, num_days: int) -> datetime:
         """
         Add business days to a date, excluding weekends and Taiwan holidays.
-        
+
         Args:
             start_date: Starting date
-            num_days: Number of business days to add
-            
+            num_days: Number of business days to add (can be negative)
+
         Returns:
             Date after adding business days
         """
         if not self.enable_holiday_checking:
             # Fall back to pandas BDay if holiday checking disabled
             return start_date + pd.tseries.offsets.BDay(num_days)
-        
+
+        if num_days == 0:
+            return start_date
+
         current_date = start_date
         days_added = 0
-        
-        while days_added < num_days:
-            current_date += timedelta(days=1)
-            
+        direction = 1 if num_days > 0 else -1
+        target_days = abs(num_days)
+
+        while days_added < target_days:
+            current_date += timedelta(days=direction)
+
             # Skip weekends
             if current_date.weekday() >= 5:  # Saturday=5, Sunday=6
                 continue
-                
+
             # Skip Taiwan holidays
             if self._is_taiwan_holiday(current_date):
                 continue
-                
+
             days_added += 1
-        
+
         return current_date
     
     def get_business_days_between(self, start_date: datetime, end_date: datetime) -> int:
