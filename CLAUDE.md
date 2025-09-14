@@ -28,7 +28,14 @@ Install required packages:
 ```bash
 pip install -r requirements.txt
 ```
-Core dependencies: pandas, openpyxl
+Core dependencies: pandas, openpyxl, requests
+
+### Taiwan Holiday Support
+The system automatically excludes Taiwan public holidays when calculating business days:
+- **Primary source**: Taiwan calendar API (api.pin-yi.me/taiwan-calendar)
+- **Fallback**: Local holiday configuration (`config/taiwan_holidays_fallback.json`)
+- **Cache**: Downloaded holidays cached locally for offline use
+- **Disable**: Set `enable_taiwan_holidays=False` to use weekends-only calculation
 
 ## Architecture
 
@@ -36,7 +43,7 @@ Core dependencies: pandas, openpyxl
 The system implements a three-stage data processing pipeline:
 
 1. **Extraction** (`OutsourcingQcExtractor`): Loads Excel data and validates required columns
-2. **Transformation** (`OutsourcingQcTrans`): Filters data for next 3 weeks and enriches with calculated dates
+2. **Transformation** (`OutsourcingQcTrans`): Filters data for next 15 working days (excluding Taiwan holidays) and enriches with calculated dates
 3. **Check Points** (`OutsourcingQcCheckPoints`): Validates business rules and identifies failures
 
 ### Business Rules Engine
