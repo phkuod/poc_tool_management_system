@@ -4,15 +4,14 @@ from pathlib import Path
 from checkpoint_strategies import CheckpointRegistry, PackageReadinessCheckpoint, FinalReportCheckpoint
 
 class OutsourcingQcCheckPoints:
-    def __init__(self, df, vendor_mapping=None):
+    def __init__(self, df):
         self.df = df
         self.today = datetime.now()
-        self.vendor_mapping = vendor_mapping or {}
         
         # Initialize the checkpoint registry with default checkpoints
         CheckpointRegistry.clear()
         CheckpointRegistry.register(PackageReadinessCheckpoint())
-        CheckpointRegistry.register(FinalReportCheckpoint(vendor_mapping))
+        CheckpointRegistry.register(FinalReportCheckpoint())
 
     def get_failures(self):
         """

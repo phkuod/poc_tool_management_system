@@ -20,7 +20,8 @@ class TestRefactoredCheckpoints(unittest.TestCase):
                 today - timedelta(weeks=3),
                 today - timedelta(weeks=2)
             ],
-            'Responsible User': ['user1@test.com', 'user2@test.com']
+            'Responsible User': ['user1@test.com', 'user2@test.com'],
+            'Vendor': ['vendor_a', 'vendor_b']
         }
         self.df = pd.DataFrame(self.test_data)
 
@@ -94,10 +95,9 @@ class TestRefactoredCheckpoints(unittest.TestCase):
         for checkpoint_name in expected_checkpoints:
             self.assertIn(checkpoint_name, failures)
 
-    def test_vendor_mapping_still_works(self):
-        """Test that vendor mapping functionality is preserved."""
-        vendor_mapping = {'ProjectA': 'vendor_a', 'ProjectB': 'vendor_b'}
-        checker = OutsourcingQcCheckPoints(self.df, vendor_mapping)
+    def test_vendor_column_functionality_works(self):
+        """Test that vendor column functionality works correctly."""
+        checker = OutsourcingQcCheckPoints(self.df)
         
         failures = checker.get_failures()
         

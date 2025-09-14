@@ -5,9 +5,10 @@ class OutsourcingQcExtractor:
         self.input_path = input_path
         self.required_columns = [
             'Tool_Number',
-            'Tool Column',
+            'Tool Column', 
             'Customer schedule',
-            'Responsible User'
+            'Responsible User',
+            'Vendor'
         ]
 
     def get_raw_data(self):
