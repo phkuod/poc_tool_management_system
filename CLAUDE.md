@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 python outsourcing_qc_system.py <input_path>
 ```
-The system processes Excel files containing tool management data with required columns: Tool_Number, Tool Column, Customer schedule, Responsible User.
+The system processes Excel files containing tool management data with required columns: Tool_Number, Tool Column, Customer schedule, Responsible User, Vendor.
 
 ### Testing
 ```bash

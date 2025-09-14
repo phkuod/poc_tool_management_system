@@ -45,19 +45,29 @@ class PackageReadinessCheckpoint(CheckpointStrategy):
 
 
 class FinalReportCheckpoint(CheckpointStrategy):
-    def __init__(self, vendor_mapping=None):
+    def __init__(self):
         super().__init__("Final Report", priority=2)
-        self.vendor_mapping = vendor_mapping or {}
     
     def should_check(self, row: pd.Series, today: datetime) -> bool:
-        return (row['Customer schedule'] - today).days <= 7
+        return (row['Customer schedule'] - today).days <= 5
     
     def execute_check(self, row: pd.Series, today: datetime) -> List[Dict[str, Any]]:
         tool_column = row['Tool Column']
         tool_number = row['Tool_Number']
-        target_path = Path(f"Target/Path/{tool_column}")
         
-        vendor_key = self._get_vendor_key(tool_column, row)
+        # Get vendor key and validate it exists
+        vendor_key = self._get_vendor_key(row)
+        if vendor_key is None:
+            return [{
+                'Tool_Number': tool_number,
+                'Project': tool_column,
+                'Vendor': str(row.get('Vendor', 'MISSING')),
+                'Fail Reason': 'Unsupported vendor or missing vendor information',
+                'Responsible User': row['Responsible User']
+            }]
+        
+        # Execute vendor-specific check
+        target_path = Path(f"Target/Path/{tool_column}")
         rule = VendorRuleRegistry.get_rule(vendor_key)
         
         if not rule.check_final_report(tool_column, tool_number, target_path):
@@ -70,10 +80,18 @@ class FinalReportCheckpoint(CheckpointStrategy):
             }]
         return []
     
-    def _get_vendor_key(self, tool_column: str, row) -> str:
-        if hasattr(row, 'Vendor') and row['Vendor']:
-            return str(row['Vendor']).lower()
-        return self.vendor_mapping.get(tool_column, 'default')
+    def _get_vendor_key(self, row) -> str:
+        """Get vendor key from row, validate it exists in registry, return None if invalid"""
+        if 'Vendor' not in row or pd.isna(row['Vendor']):
+            return None
+        
+        vendor_key = str(row['Vendor']).lower()
+        
+        # Check if vendor exists in registry
+        if vendor_key not in VendorRuleRegistry.list_vendors():
+            return None
+            
+        return vendor_key
 
 
 class QualityAssuranceCheckpoint(CheckpointStrategy):
@@ -167,11 +185,11 @@ class CheckpointRegistry:
         cls._checkpoints.clear()
     
     @classmethod
-    def initialize_defaults(cls, vendor_mapping=None):
+    def initialize_defaults(cls):
         """Initialize with default checkpoints."""
         cls.clear()
         cls.register(PackageReadinessCheckpoint())
-        cls.register(FinalReportCheckpoint(vendor_mapping))
+        cls.register(FinalReportCheckpoint())
         # Future checkpoints can be added here
         # cls.register(QualityAssuranceCheckpoint())
         # cls.register(CustomerApprovalCheckpoint())

@@ -33,7 +33,7 @@ class TestVendorRules(unittest.TestCase):
         rule = VendorRuleRegistry.get_rule('custom')
         self.assertEqual(rule.get_fail_reason(), "Custom vendor rule failed")
 
-    def test_check_points_with_vendor_mapping(self):
+    def test_check_points_with_vendor_column(self):
         today = datetime.now()
         data = {
             'Tool_Number': ['T001', 'T002'],
@@ -46,16 +46,12 @@ class TestVendorRules(unittest.TestCase):
                 today - timedelta(weeks=3),
                 today - timedelta(weeks=3)
             ],
-            'Responsible User': ['user1@test.com', 'user2@test.com']
+            'Responsible User': ['user1@test.com', 'user2@test.com'],
+            'Vendor': ['vendor_a', 'vendor_b']  # Vendor info now directly in data
         }
         df = pd.DataFrame(data)
         
-        vendor_mapping = {
-            'ProjectA': 'vendor_a',
-            'ProjectB': 'vendor_b'
-        }
-        
-        checker = OutsourcingQcCheckPoints(df, vendor_mapping)
+        checker = OutsourcingQcCheckPoints(df)
         failures = checker.get_failures()
         
         self.assertIn('Final Report', failures)

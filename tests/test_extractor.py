@@ -12,7 +12,8 @@ class TestOutsourcingQcExtractor(unittest.TestCase):
             'Tool_Number': ['T001'],
             'Tool Column': ['ProjectA'],
             'Customer schedule': ['2025-07-15'],
-            'Responsible User': ['test@example.com']
+            'Responsible User': ['test@example.com'],
+            'Vendor': ['vendor_a']
         }
         df = pd.DataFrame(data)
         df.to_excel(self.test_file, index=False)
