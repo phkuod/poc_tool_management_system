@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Comprehensive demo script for enhanced vendor rules with DataFrame integration.
+Comprehensive demo script for vendor rules with DataFrame integration.
 Shows the complete 5-step validation process with detailed reporting.
 """
 
@@ -403,8 +403,8 @@ def demo_configuration_flexibility():
 
 
 def main():
-    """Run comprehensive enhanced vendor rules demonstration."""
-    print("Enhanced Vendor Rules - Comprehensive Demo")
+    """Run comprehensive vendor rules demonstration."""
+    print("Vendor Rules - Comprehensive Demo")
     print("=" * 60)
     print()
 

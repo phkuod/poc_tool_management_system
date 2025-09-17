@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for enhanced vendor rules with DataFrame integration.
+Unit tests for vendor rules with DataFrame integration.
 """
 
 import unittest
@@ -24,8 +24,8 @@ from vendor_rules import (
 from vendor_config_loader import VendorConfigLoader
 
 
-class TestEnhancedVendorRules(unittest.TestCase):
-    """Test cases for enhanced vendor rules."""
+class TestVendorRules(unittest.TestCase):
+    """Test cases for vendor rules."""
 
     def setUp(self):
         """Set up test fixtures."""
@@ -116,10 +116,10 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self.assertTrue(is_valid, f"Validation failed: {message}")
 
     def test_enhanced_vendor_rule_creation(self):
-        """Test creation of enhanced vendor rule."""
+        """Test creation of vendor rule."""
         config_loader = VendorConfigLoader(self.test_config_path)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         self.assertEqual(rule.vendor_key, "test_vendor")
@@ -182,7 +182,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(source_archive_path, source_files)
         self._create_test_archive(target_archive_path, target_files)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
@@ -222,7 +222,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(source_archive_path, source_files)
         self._create_test_archive(target_archive_path, target_files)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row with high technology value
@@ -261,7 +261,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(source_archive_path, source_files)
         self._create_test_archive(target_archive_path, target_files)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
@@ -300,7 +300,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(source_archive_path, source_files)
         self._create_test_archive(target_archive_path, target_files)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
@@ -319,7 +319,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self.assertEqual(result["steps"]["file_consistency"]["status"], "FAIL")
 
     def test_enhanced_vendor_registry(self):
-        """Test enhanced vendor registry functionality."""
+        """Test vendor registry functionality."""
         config_loader = VendorConfigLoader(self.test_config_path)
 
         # Register test vendor manually for this test
@@ -343,7 +343,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         """Test behavior when archives are missing."""
         config_loader = VendorConfigLoader(self.test_config_path)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row (no archives created)
@@ -379,7 +379,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(source_archive_path, source_files)
         self._create_test_archive(target_archive_path, target_files)
 
-        # Create enhanced vendor rule
+        # Create vendor rule
         rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row

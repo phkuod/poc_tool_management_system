@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Basic test to verify enhanced vendor rule functionality.
+Basic test to verify vendor rule functionality.
 """
 
 import pandas as pd
@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from vendor_rules import GenericVendorRule, VendorRuleRegistry
 
 def test_basic_functionality():
-    """Test basic enhanced vendor rule functionality."""
-    print("=== BASIC ENHANCED VENDOR RULE TEST ===")
+    """Test basic vendor rule functionality."""
+    print("=== BASIC VENDOR RULE TEST ===")
 
     # Test with the configured vendors
     vendors = ["vendor_a", "vendor_b", "vendor_c"]
@@ -42,16 +42,16 @@ def test_basic_functionality():
             print(f"   FAIL: Error: {e}")
 
 def test_registry():
-    """Test enhanced vendor registry."""
-    print(f"\n=== ENHANCED VENDOR REGISTRY TEST ===")
+    """Test vendor registry."""
+    print(f"\n=== VENDOR REGISTRY TEST ===")
 
     # Test listing vendors
-    available = VendorRuleRegistry.list_enhanced_vendors()
-    print(f"Available enhanced vendors: {available}")
+    available = VendorRuleRegistry.list_vendors()
+    print(f"Available vendors: {available}")
 
     # Test getting rules
     for vendor in available[:2]:  # Test first 2
-        rule = VendorRuleRegistry.get_enhanced_rule(vendor)
+        rule = VendorRuleRegistry.get_rule(vendor)
         if rule:
             print(f"PASS {vendor}: Rule retrieved successfully")
         else:

@@ -1,5 +1,5 @@
 """
-Enhanced vendor rules with DataFrame integration and comprehensive validation.
+Vendor rules with DataFrame integration and comprehensive validation.
 Supports regex-based archive discovery, configurable file extensions, and detailed reporting.
 """
 
@@ -384,8 +384,8 @@ class VendorRuleStrategy(ABC):
         return pass_count, fail_count, pattern_results
 
 
-class EnhancedVendorARule(VendorRuleStrategy):
-    """Enhanced Vendor A rule with tar.gz support and configurable patterns."""
+class VendorARule(VendorRuleStrategy):
+    """Vendor A rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
         super().__init__("vendor_a", config_loader)
@@ -394,8 +394,8 @@ class EnhancedVendorARule(VendorRuleStrategy):
         return "Vendor A validation failed - check pattern validation details"
 
 
-class EnhancedVendorBRule(VendorRuleStrategy):
-    """Enhanced Vendor B rule with tar.gz support and configurable patterns."""
+class VendorBRule(VendorRuleStrategy):
+    """Vendor B rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
         super().__init__("vendor_b", config_loader)
@@ -404,8 +404,8 @@ class EnhancedVendorBRule(VendorRuleStrategy):
         return "Vendor B validation failed - check pattern validation details"
 
 
-class EnhancedVendorCRule(VendorRuleStrategy):
-    """Enhanced Vendor C rule with tar.gz support and configurable patterns."""
+class VendorCRule(VendorRuleStrategy):
+    """Vendor C rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
         super().__init__("vendor_c", config_loader)
@@ -428,7 +428,7 @@ class VendorRuleRegistry:
             vendor_key: Vendor identifier
 
         Returns:
-            Enhanced vendor rule instance or None if not found
+            Vendor rule instance or None if not found
         """
         vendor_key = vendor_key.lower()
 
@@ -436,7 +436,7 @@ class VendorRuleRegistry:
             # Try to create rule dynamically if config exists
             if vendor_config_loader.get_vendor_config(vendor_key):
                 try:
-                    # For now, use a generic enhanced rule
+                    # For now, use a generic rule
                     cls._rules[vendor_key] = VendorRuleStrategy(vendor_key)
                 except ValueError:
                     return None
@@ -452,17 +452,17 @@ class VendorRuleRegistry:
 
         Args:
             vendor_key: Vendor identifier
-            rule: Enhanced vendor rule instance
+            rule: Vendor rule instance
         """
         cls._rules[vendor_key.lower()] = rule
 
     @classmethod
     def list_vendors(cls) -> List[str]:
         """
-        Get list of all available enhanced vendors.
+        Get list of all available vendors.
 
         Returns:
-            List of enhanced vendor keys
+            List of vendor keys
         """
         # Return both registered and configured vendors
         registered = list(cls._rules.keys())
