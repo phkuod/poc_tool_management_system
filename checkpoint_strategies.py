@@ -9,11 +9,11 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from vendor_rules import EnhancedVendorRuleRegistry
+from vendor_rules import VendorRuleRegistry
 
 
-class EnhancedCheckpointStrategy(ABC):
-    """Enhanced checkpoint strategy with detailed reporting and DataFrame integration."""
+class CheckpointStrategy(ABC):
+    """Checkpoint strategy with detailed reporting and DataFrame integration."""
 
     def __init__(self, name: str, priority: int = 0):
         self.name = name
@@ -29,7 +29,7 @@ class EnhancedCheckpointStrategy(ABC):
         """Execute the checkpoint logic and return list of failures."""
         pass
 
-    def execute_enhanced_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
+    def execute_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
         """
         Execute enhanced checkpoint with detailed reporting.
 
@@ -79,7 +79,7 @@ class EnhancedCheckpointStrategy(ABC):
         return result
 
 
-class EnhancedPackageReadinessCheckpoint(EnhancedCheckpointStrategy):
+class PackageReadinessCheckpoint(CheckpointStrategy):
     """Enhanced package readiness checkpoint with detailed validation."""
 
     def __init__(self):
@@ -104,7 +104,7 @@ class EnhancedPackageReadinessCheckpoint(EnhancedCheckpointStrategy):
         return []
 
 
-class EnhancedFinalReportCheckpoint(EnhancedCheckpointStrategy):
+class FinalReportCheckpoint(CheckpointStrategy):
     """Enhanced final report checkpoint with comprehensive vendor validation."""
 
     def __init__(self):
@@ -130,14 +130,14 @@ class EnhancedFinalReportCheckpoint(EnhancedCheckpointStrategy):
             }]
 
         # Try enhanced vendor rule first
-        enhanced_rule = EnhancedVendorRuleRegistry.get_enhanced_rule(vendor_key)
+        enhanced_rule = VendorRuleRegistry.get_rule(vendor_key)
         if enhanced_rule:
             return self._execute_enhanced_vendor_check(enhanced_rule, row)
         else:
             # Fallback to legacy vendor rule
             return self._execute_legacy_vendor_check(vendor_key, row)
 
-    def execute_enhanced_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
+    def execute_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
         """
         Execute enhanced checkpoint with comprehensive vendor validation.
 
@@ -148,11 +148,11 @@ class EnhancedFinalReportCheckpoint(EnhancedCheckpointStrategy):
         Returns:
             Detailed checkpoint result with vendor validation details
         """
-        base_result = super().execute_enhanced_check(row, today)
+        base_result = super().execute_check(row, today)
 
         if base_result["should_check"] and base_result["executed"]:
             vendor_key = self._get_vendor_key(row)
-            enhanced_rule = EnhancedVendorRuleRegistry.get_enhanced_rule(vendor_key)
+            enhanced_rule = VendorRuleRegistry.get_rule(vendor_key)
 
             if enhanced_rule:
                 # Add detailed vendor validation result
@@ -257,7 +257,7 @@ class EnhancedFinalReportCheckpoint(EnhancedCheckpointStrategy):
         vendor_key = str(row['Vendor']).lower()
 
         # Check if vendor exists in enhanced or legacy registry
-        if vendor_key in EnhancedVendorRuleRegistry.list_enhanced_vendors():
+        if vendor_key in VendorRuleRegistry.list_vendors():
             return vendor_key
         elif vendor_key in VendorRuleRegistry.list_vendors():
             return vendor_key
@@ -265,13 +265,13 @@ class EnhancedFinalReportCheckpoint(EnhancedCheckpointStrategy):
             return None
 
 
-class EnhancedCheckpointRegistry:
+class CheckpointRegistry:
     """Registry for enhanced checkpoint strategies."""
 
-    _enhanced_checkpoints: List[EnhancedCheckpointStrategy] = []
+    _enhanced_checkpoints: List[CheckpointStrategy] = []
 
     @classmethod
-    def register(cls, checkpoint: EnhancedCheckpointStrategy):
+    def register(cls, checkpoint: CheckpointStrategy):
         """Register an enhanced checkpoint strategy."""
         cls._enhanced_checkpoints.append(checkpoint)
         cls._enhanced_checkpoints.sort(key=lambda x: x.priority)
@@ -282,7 +282,7 @@ class EnhancedCheckpointRegistry:
         cls._enhanced_checkpoints = [cp for cp in cls._enhanced_checkpoints if cp.name != checkpoint_name]
 
     @classmethod
-    def get_all_enhanced_checkpoints(cls) -> List[EnhancedCheckpointStrategy]:
+    def get_all_checkpoints(cls) -> List[CheckpointStrategy]:
         """Get all registered enhanced checkpoints sorted by priority."""
         return cls._enhanced_checkpoints.copy()
 
@@ -292,14 +292,14 @@ class EnhancedCheckpointRegistry:
         cls._enhanced_checkpoints.clear()
 
     @classmethod
-    def initialize_enhanced_defaults(cls):
+    def initialize_defaults(cls):
         """Initialize with enhanced default checkpoints."""
         cls.clear()
-        cls.register(EnhancedPackageReadinessCheckpoint())
-        cls.register(EnhancedFinalReportCheckpoint())
+        cls.register(PackageReadinessCheckpoint())
+        cls.register(FinalReportCheckpoint())
 
     @classmethod
-    def execute_all_enhanced_checks(cls, row: pd.Series, today: datetime) -> Dict[str, Any]:
+    def execute_all_checks(cls, row: pd.Series, today: datetime) -> Dict[str, Any]:
         """
         Execute all enhanced checkpoints for a given row.
 
@@ -320,8 +320,8 @@ class EnhancedCheckpointRegistry:
             "executed_checkpoints": 0
         }
 
-        for checkpoint in cls.get_all_enhanced_checkpoints():
-            checkpoint_result = checkpoint.execute_enhanced_check(row, today)
+        for checkpoint in cls.get_all_checkpoints():
+            checkpoint_result = checkpoint.execute_check(row, today)
             results["checkpoints"].append(checkpoint_result)
 
             if checkpoint_result["executed"]:
@@ -335,4 +335,4 @@ class EnhancedCheckpointRegistry:
 
 
 # Initialize enhanced checkpoint registry with defaults
-EnhancedCheckpointRegistry.initialize_enhanced_defaults()
+CheckpointRegistry.initialize_defaults()

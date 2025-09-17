@@ -1,5 +1,5 @@
 """
-Enhanced outsourcing QC check points with DataFrame integration and comprehensive vendor validation.
+Outsourcing QC check points with DataFrame integration and comprehensive vendor validation.
 Extends existing checkpoint system to support enhanced vendor rules with detailed reporting.
 """
 
@@ -8,11 +8,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
-from checkpoint_strategies import EnhancedCheckpointRegistry
+from checkpoint_strategies import CheckpointRegistry
 
 
-class EnhancedOutsourcingQcCheckPoints:
-    """Enhanced QC check points with comprehensive validation and detailed reporting."""
+class OutsourcingQcCheckPoints:
+    """QC check points with comprehensive validation and detailed reporting."""
 
     def __init__(self, df: pd.DataFrame):
         """
@@ -25,7 +25,7 @@ class EnhancedOutsourcingQcCheckPoints:
         self.today = datetime.now()
 
         # Initialize enhanced checkpoint registry
-        EnhancedCheckpointRegistry.initialize_enhanced_defaults()
+        CheckpointRegistry.initialize_defaults()
 
     def get_failures(self) -> Dict[str, List[Dict[str, Any]]]:
         """
@@ -34,9 +34,9 @@ class EnhancedOutsourcingQcCheckPoints:
         Returns:
             Dictionary mapping checkpoint names to lists of failure details
         """
-        return self._get_enhanced_failures()
+        return self._get_failures()
 
-    def get_enhanced_results(self) -> Dict[str, Any]:
+    def get_results(self) -> Dict[str, Any]:
         """
         Get comprehensive enhanced validation results for all rows.
 
@@ -59,7 +59,7 @@ class EnhancedOutsourcingQcCheckPoints:
         }
 
         for index, row in self.df.iterrows():
-            tool_result = EnhancedCheckpointRegistry.execute_all_enhanced_checks(row, self.today)
+            tool_result = CheckpointRegistry.execute_all_checks(row, self.today)
             results["tool_results"].append(tool_result)
 
             # Update summary statistics
@@ -130,7 +130,7 @@ class EnhancedOutsourcingQcCheckPoints:
             vendor_data["total_tools"] += 1
 
             # Execute enhanced validation for this tool
-            tool_result = EnhancedCheckpointRegistry.execute_all_enhanced_checks(row, self.today)
+            tool_result = CheckpointRegistry.execute_all_checks(row, self.today)
             vendor_data["tools"][tool_number] = tool_result
 
             # Analyze enhanced validation details
@@ -167,11 +167,11 @@ class EnhancedOutsourcingQcCheckPoints:
 
         return vendor_analysis
 
-    def _get_enhanced_failures(self) -> Dict[str, List[Dict[str, Any]]]:
+    def _get_failures(self) -> Dict[str, List[Dict[str, Any]]]:
         """Get failures using enhanced validation system."""
         failures = {}
 
-        for checkpoint in EnhancedCheckpointRegistry.get_all_enhanced_checkpoints():
+        for checkpoint in CheckpointRegistry.get_all_checkpoints():
             failures[checkpoint.name] = []
 
             for index, row in self.df.iterrows():
@@ -184,15 +184,15 @@ class EnhancedOutsourcingQcCheckPoints:
 
     def add_checkpoint(self, checkpoint):
         """Add a new checkpoint to the enhanced registry."""
-        EnhancedCheckpointRegistry.register(checkpoint)
+        CheckpointRegistry.register(checkpoint)
 
     def remove_checkpoint(self, checkpoint_name: str):
         """Remove a checkpoint by name from the enhanced registry."""
-        EnhancedCheckpointRegistry.unregister(checkpoint_name)
+        CheckpointRegistry.unregister(checkpoint_name)
 
     def list_checkpoints(self) -> List[str]:
         """List all registered checkpoint names."""
-        return [cp.name for cp in EnhancedCheckpointRegistry.get_all_enhanced_checkpoints()]
+        return [cp.name for cp in CheckpointRegistry.get_all_checkpoints()]
 
     def export_detailed_report(self, output_file: Optional[str] = None) -> Dict[str, Any]:
         """
@@ -212,9 +212,9 @@ class EnhancedOutsourcingQcCheckPoints:
                 "validation_type": "enhanced",
                 "report_version": "1.0"
             },
-            "enhanced_results": self.get_enhanced_results(),
+            "results": self.get_results(),
             "vendor_analysis": self.get_vendor_analysis(),
-            "enhanced_failures": self._get_enhanced_failures()
+            "failures": self._get_failures()
         }
 
         if output_file:
@@ -231,8 +231,8 @@ class EnhancedOutsourcingQcCheckPoints:
         Returns:
             Summary statistics including success rates and failure analysis
         """
-        enhanced_results = self.get_enhanced_results()
-        summary = enhanced_results["summary"]
+        results = self.get_results()
+        summary = results["summary"]
 
         total_tools = summary["total_successes"] + summary["total_failures"]
         success_rate = (summary["total_successes"] / total_tools * 100) if total_tools > 0 else 0

@@ -17,9 +17,9 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from vendor_rules import (
-    EnhancedVendorRuleStrategy,
-    EnhancedVendorRuleRegistry,
-    GenericEnhancedVendorRule
+    VendorRuleStrategy,
+    VendorRuleRegistry,
+    GenericVendorRule
 )
 from vendor_config_loader import VendorConfigLoader
 
@@ -76,7 +76,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
 
         # Clear vendor registry cache
-        EnhancedVendorRuleRegistry.clear_cache()
+        VendorRuleRegistry.clear_cache()
 
     def _create_test_archive(self, archive_path: str, files: dict):
         """Create a test tar.gz archive with specified files."""
@@ -120,7 +120,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         config_loader = VendorConfigLoader(self.test_config_path)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         self.assertEqual(rule.vendor_key, "test_vendor")
         self.assertIsNotNone(rule.config)
@@ -145,7 +145,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Test archive discovery
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
         row_data = {
@@ -183,7 +183,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
         row_data = {
@@ -223,7 +223,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row with high technology value
         row_data = {
@@ -262,7 +262,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
         row_data = {
@@ -301,7 +301,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
         row_data = {
@@ -323,20 +323,20 @@ class TestEnhancedVendorRules(unittest.TestCase):
         config_loader = VendorConfigLoader(self.test_config_path)
 
         # Register test vendor manually for this test
-        test_rule = GenericEnhancedVendorRule("test_vendor", config_loader)
-        EnhancedVendorRuleRegistry.register_enhanced_rule("test_vendor", test_rule)
+        test_rule = GenericVendorRule("test_vendor", config_loader)
+        VendorRuleRegistry.register_rule("test_vendor", test_rule)
 
         # Test registry functionality
-        vendors = EnhancedVendorRuleRegistry.list_enhanced_vendors()
+        vendors = VendorRuleRegistry.list_vendors()
         self.assertIn("test_vendor", vendors)
 
         # Test getting enhanced rule
-        rule = EnhancedVendorRuleRegistry.get_enhanced_rule("test_vendor")
+        rule = VendorRuleRegistry.get_rule("test_vendor")
         self.assertIsNotNone(rule)
         self.assertEqual(rule.vendor_key, "test_vendor")
 
         # Test non-existent vendor
-        no_rule = EnhancedVendorRuleRegistry.get_enhanced_rule("nonexistent_vendor")
+        no_rule = VendorRuleRegistry.get_rule("nonexistent_vendor")
         self.assertIsNone(no_rule)
 
     def test_missing_archives(self):
@@ -344,7 +344,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         config_loader = VendorConfigLoader(self.test_config_path)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row (no archives created)
         row_data = {
@@ -380,7 +380,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self._create_test_archive(target_archive_path, target_files)
 
         # Create enhanced vendor rule
-        rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        rule = GenericVendorRule("test_vendor", config_loader)
 
         # Create test DataFrame row
         row_data = {

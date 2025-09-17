@@ -14,12 +14,12 @@ from tar_file_reader import TarFileReader
 from tar_compare import TarFileComparer
 
 
-class EnhancedVendorRuleStrategy(ABC):
-    """Enhanced vendor rule strategy with DataFrame integration and comprehensive validation."""
+class VendorRuleStrategy(ABC):
+    """Vendor rule strategy with DataFrame integration and comprehensive validation."""
 
     def __init__(self, vendor_key: str, config_loader=None):
         """
-        Initialize the enhanced vendor rule.
+        Initialize the vendor rule.
 
         Args:
             vendor_key: Vendor identifier (e.g., 'vendor_a')
@@ -384,7 +384,7 @@ class EnhancedVendorRuleStrategy(ABC):
         return pass_count, fail_count, pattern_results
 
 
-class EnhancedVendorARule(EnhancedVendorRuleStrategy):
+class EnhancedVendorARule(VendorRuleStrategy):
     """Enhanced Vendor A rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
@@ -394,7 +394,7 @@ class EnhancedVendorARule(EnhancedVendorRuleStrategy):
         return "Vendor A validation failed - check pattern validation details"
 
 
-class EnhancedVendorBRule(EnhancedVendorRuleStrategy):
+class EnhancedVendorBRule(VendorRuleStrategy):
     """Enhanced Vendor B rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
@@ -404,7 +404,7 @@ class EnhancedVendorBRule(EnhancedVendorRuleStrategy):
         return "Vendor B validation failed - check pattern validation details"
 
 
-class EnhancedVendorCRule(EnhancedVendorRuleStrategy):
+class EnhancedVendorCRule(VendorRuleStrategy):
     """Enhanced Vendor C rule with tar.gz support and configurable patterns."""
 
     def __init__(self, config_loader=None):
@@ -414,15 +414,15 @@ class EnhancedVendorCRule(EnhancedVendorRuleStrategy):
         return "Vendor C validation failed - check pattern validation details"
 
 
-class EnhancedVendorRuleRegistry:
-    """Registry for enhanced vendor rules with automatic configuration loading."""
+class VendorRuleRegistry:
+    """Registry for vendor rules with automatic configuration loading."""
 
-    _enhanced_rules = {}
+    _rules = {}
 
     @classmethod
-    def get_enhanced_rule(cls, vendor_key: str) -> Optional[EnhancedVendorRuleStrategy]:
+    def get_rule(cls, vendor_key: str) -> Optional[VendorRuleStrategy]:
         """
-        Get enhanced vendor rule by key.
+        Get vendor rule by key.
 
         Args:
             vendor_key: Vendor identifier
@@ -432,32 +432,32 @@ class EnhancedVendorRuleRegistry:
         """
         vendor_key = vendor_key.lower()
 
-        if vendor_key not in cls._enhanced_rules:
+        if vendor_key not in cls._rules:
             # Try to create rule dynamically if config exists
             if vendor_config_loader.get_vendor_config(vendor_key):
                 try:
                     # For now, use a generic enhanced rule
-                    cls._enhanced_rules[vendor_key] = EnhancedVendorRuleStrategy(vendor_key)
+                    cls._rules[vendor_key] = VendorRuleStrategy(vendor_key)
                 except ValueError:
                     return None
             else:
                 return None
 
-        return cls._enhanced_rules.get(vendor_key)
+        return cls._rules.get(vendor_key)
 
     @classmethod
-    def register_enhanced_rule(cls, vendor_key: str, rule: EnhancedVendorRuleStrategy):
+    def register_rule(cls, vendor_key: str, rule: VendorRuleStrategy):
         """
-        Register an enhanced vendor rule.
+        Register an vendor rule.
 
         Args:
             vendor_key: Vendor identifier
             rule: Enhanced vendor rule instance
         """
-        cls._enhanced_rules[vendor_key.lower()] = rule
+        cls._rules[vendor_key.lower()] = rule
 
     @classmethod
-    def list_enhanced_vendors(cls) -> List[str]:
+    def list_vendors(cls) -> List[str]:
         """
         Get list of all available enhanced vendors.
 
@@ -465,20 +465,20 @@ class EnhancedVendorRuleRegistry:
             List of enhanced vendor keys
         """
         # Return both registered and configured vendors
-        registered = list(cls._enhanced_rules.keys())
+        registered = list(cls._rules.keys())
         configured = vendor_config_loader.list_vendors()
         return list(set(registered + configured))
 
     @classmethod
     def clear_cache(cls):
         """Clear cached rules and reload configurations."""
-        cls._enhanced_rules.clear()
+        cls._rules.clear()
         vendor_config_loader.clear_cache()
 
 
-# Create a generic enhanced vendor rule class
-class GenericEnhancedVendorRule(EnhancedVendorRuleStrategy):
-    """Generic enhanced vendor rule that works with any configured vendor."""
+# Create a generic vendor rule class
+class GenericVendorRule(VendorRuleStrategy):
+    """Generic vendor rule that works with any configured vendor."""
 
     def __init__(self, vendor_key: str, config_loader=None):
         super().__init__(vendor_key, config_loader)
@@ -487,21 +487,21 @@ class GenericEnhancedVendorRule(EnhancedVendorRuleStrategy):
         return f"{self.vendor_key} validation failed - check pattern validation details"
 
 
-# Override the get_enhanced_rule method to use generic class
-def _get_enhanced_rule_generic(cls, vendor_key: str) -> Optional[EnhancedVendorRuleStrategy]:
-    """Get enhanced vendor rule with generic fallback."""
+# Override the get_rule method to use generic class
+def _get_rule_generic(cls, vendor_key: str) -> Optional[VendorRuleStrategy]:
+    """Get vendor rule with generic fallback."""
     vendor_key = vendor_key.lower()
 
-    if vendor_key not in cls._enhanced_rules:
+    if vendor_key not in cls._rules:
         if vendor_config_loader.get_vendor_config(vendor_key):
             try:
-                cls._enhanced_rules[vendor_key] = GenericEnhancedVendorRule(vendor_key)
+                cls._rules[vendor_key] = GenericVendorRule(vendor_key)
             except ValueError:
                 return None
         else:
             return None
 
-    return cls._enhanced_rules.get(vendor_key)
+    return cls._rules.get(vendor_key)
 
 # Replace the method
-EnhancedVendorRuleRegistry.get_enhanced_rule = classmethod(_get_enhanced_rule_generic)
+VendorRuleRegistry.get_rule = classmethod(_get_rule_generic)

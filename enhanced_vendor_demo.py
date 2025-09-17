@@ -12,8 +12,8 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from vendor_rules import EnhancedVendorRuleRegistry, GenericEnhancedVendorRule
-from outsourcing_qc_check_points import EnhancedOutsourcingQcCheckPoints
+from vendor_rules import VendorRuleRegistry, GenericVendorRule
+from outsourcing_qc_check_points import OutsourcingQcCheckPoints
 from vendor_config_loader import VendorConfigLoader
 
 
@@ -236,9 +236,9 @@ def demo_enhanced_vendor_validation():
             print(f">> Tool {tool_number} (Vendor: {vendor}, Technology: {technology}):")
 
             # Get enhanced vendor rule with demo config
-            from enhanced_vendor_rules import GenericEnhancedVendorRule
+            from enhanced_vendor_rules import GenericVendorRule
             try:
-                rule = GenericEnhancedVendorRule(vendor, config_loader)
+                rule = GenericVendorRule(vendor, config_loader)
             except ValueError:
                 rule = None
 
@@ -285,7 +285,7 @@ def demo_enhanced_vendor_validation():
         print("=== COMPREHENSIVE CHECKPOINT VALIDATION ===")
         print()
 
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(df, use_enhanced=True)
+        enhanced_checker = OutsourcingQcCheckPoints(df, use_enhanced=True)
         # Note: For demo purposes, the enhanced checker would need custom configuration injection
 
         # Get enhanced results

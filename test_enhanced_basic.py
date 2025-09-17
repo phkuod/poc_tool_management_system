@@ -5,7 +5,7 @@ Basic test to verify enhanced vendor rule functionality.
 
 import pandas as pd
 from datetime import datetime, timedelta
-from vendor_rules import GenericEnhancedVendorRule, EnhancedVendorRuleRegistry
+from vendor_rules import GenericVendorRule, VendorRuleRegistry
 
 def test_basic_functionality():
     """Test basic enhanced vendor rule functionality."""
@@ -19,7 +19,7 @@ def test_basic_functionality():
 
         try:
             # Create enhanced vendor rule
-            rule = GenericEnhancedVendorRule(vendor)
+            rule = GenericVendorRule(vendor)
             print(f"   PASS: Rule created successfully")
             print(f"   Config loaded: {len(rule.config.get('required_patterns', []))} patterns")
             print(f"   Bypass threshold: {rule.config['bypass_rules']['technology_threshold']}")
@@ -46,12 +46,12 @@ def test_registry():
     print(f"\n=== ENHANCED VENDOR REGISTRY TEST ===")
 
     # Test listing vendors
-    available = EnhancedVendorRuleRegistry.list_enhanced_vendors()
+    available = VendorRuleRegistry.list_enhanced_vendors()
     print(f"Available enhanced vendors: {available}")
 
     # Test getting rules
     for vendor in available[:2]:  # Test first 2
-        rule = EnhancedVendorRuleRegistry.get_enhanced_rule(vendor)
+        rule = VendorRuleRegistry.get_enhanced_rule(vendor)
         if rule:
             print(f"PASS {vendor}: Rule retrieved successfully")
         else:

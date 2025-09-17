@@ -16,11 +16,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from checkpoint_strategies import (
-    EnhancedCheckpointRegistry,
-    EnhancedPackageReadinessCheckpoint,
-    EnhancedFinalReportCheckpoint
+    CheckpointRegistry,
+    PackageReadinessCheckpoint,
+    FinalReportCheckpoint
 )
-from outsourcing_qc_check_points import EnhancedOutsourcingQcCheckPoints
+from outsourcing_qc_check_points import OutsourcingQcCheckPoints
 
 
 class TestEnhancedCheckpoints(unittest.TestCase):
@@ -91,15 +91,15 @@ class TestEnhancedCheckpoints(unittest.TestCase):
         shutil.rmtree(self.temp_dir)
 
         # Clear checkpoint registry
-        EnhancedCheckpointRegistry.clear()
+        CheckpointRegistry.clear()
 
     def test_enhanced_checkpoint_registry(self):
         """Test enhanced checkpoint registry functionality."""
         # Initialize with defaults
-        EnhancedCheckpointRegistry.initialize_enhanced_defaults()
+        CheckpointRegistry.initialize_defaults()
 
         # Check that defaults are registered
-        checkpoints = EnhancedCheckpointRegistry.get_all_enhanced_checkpoints()
+        checkpoints = CheckpointRegistry.get_all_checkpoints()
         self.assertEqual(len(checkpoints), 2)
 
         checkpoint_names = [cp.name for cp in checkpoints]
@@ -112,7 +112,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_enhanced_package_readiness_checkpoint(self):
         """Test enhanced package readiness checkpoint."""
-        checkpoint = EnhancedPackageReadinessCheckpoint()
+        checkpoint = PackageReadinessCheckpoint()
         today = datetime.now()
 
         # Test should_check logic
@@ -129,7 +129,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_enhanced_final_report_checkpoint(self):
         """Test enhanced final report checkpoint."""
-        checkpoint = EnhancedFinalReportCheckpoint()
+        checkpoint = FinalReportCheckpoint()
         today = datetime.now()
 
         # Test should_check logic
@@ -140,7 +140,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
         # Test execution with enhanced validation
         row = self.test_df.iloc[0]  # T001, should trigger final report check
-        enhanced_result = checkpoint.execute_enhanced_check(row, today)
+        enhanced_result = checkpoint.execute_check(row, today)
 
         self.assertEqual(enhanced_result["checkpoint_name"], "Enhanced Final Report")
         self.assertEqual(enhanced_result["tool_number"], "T001")
@@ -151,10 +151,10 @@ class TestEnhancedCheckpoints(unittest.TestCase):
     def test_enhanced_outsourcing_qc_check_points(self):
         """Test enhanced outsourcing QC check points."""
         # Test with enhanced validation
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
 
         # Get enhanced results
-        enhanced_results = enhanced_checker.get_enhanced_results()
+        enhanced_results = enhanced_checker.get_results()
 
         self.assertEqual(enhanced_results["total_tools"], 3)
         self.assertTrue(enhanced_results["enhanced_validation"])
@@ -173,11 +173,11 @@ class TestEnhancedCheckpoints(unittest.TestCase):
     def test_enhanced_vs_legacy_validation(self):
         """Test comparison between enhanced and legacy validation."""
         # Test enhanced validation
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
         enhanced_failures = enhanced_checker.get_failures()
 
         # Test legacy validation
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
         legacy_failures = enhanced_checker.get_failures()
 
         # Both should have failures (different reasons though)
@@ -192,7 +192,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_vendor_analysis(self):
         """Test vendor analysis functionality."""
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
         vendor_analysis = enhanced_checker.get_vendor_analysis()
 
         # Check vendor_a analysis
@@ -211,7 +211,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_summary_statistics(self):
         """Test summary statistics generation."""
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
         summary_stats = enhanced_checker.get_summary_statistics()
 
         self.assertEqual(summary_stats["validation_type"], "enhanced")
@@ -221,7 +221,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
         self.assertEqual(summary_stats["success_rate"], 0.0)
 
         # Test legacy summary
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
         legacy_stats = enhanced_checker.get_summary_statistics()
 
         self.assertEqual(legacy_stats["validation_type"], "enhanced")
@@ -229,11 +229,11 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_checkpoint_execution_timing(self):
         """Test that checkpoint execution includes timing information."""
-        checkpoint = EnhancedFinalReportCheckpoint()
+        checkpoint = FinalReportCheckpoint()
         today = datetime.now()
         row = self.test_df.iloc[0]
 
-        enhanced_result = checkpoint.execute_enhanced_check(row, today)
+        enhanced_result = checkpoint.execute_check(row, today)
 
         self.assertIn("execution_time", enhanced_result)
         self.assertIsInstance(enhanced_result["execution_time"], float)
@@ -241,7 +241,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_checkpoint_error_handling(self):
         """Test checkpoint error handling."""
-        class FailingCheckpoint(EnhancedFinalReportCheckpoint):
+        class FailingCheckpoint(FinalReportCheckpoint):
             def execute_check(self, row, today):
                 raise ValueError("Test error")
 
@@ -249,7 +249,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
         today = datetime.now()
         row = self.test_df.iloc[0]
 
-        enhanced_result = checkpoint.execute_enhanced_check(row, today)
+        enhanced_result = checkpoint.execute_check(row, today)
 
         self.assertTrue(enhanced_result["executed"])
         self.assertFalse(enhanced_result["success"])
@@ -258,7 +258,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
     def test_export_detailed_report(self):
         """Test detailed report export functionality."""
-        enhanced_checker = EnhancedOutsourcingQcCheckPoints(self.test_df)
+        enhanced_checker = OutsourcingQcCheckPoints(self.test_df)
 
         # Export report without file
         report = enhanced_checker.export_detailed_report()
@@ -285,16 +285,16 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
         self.assertEqual(file_report["report_metadata"]["total_tools_analyzed"], 3)
 
-    def test_execute_all_enhanced_checks(self):
+    def test_execute_all_checks(self):
         """Test executing all enhanced checks for a single row."""
         today = datetime.now()
         row = self.test_df.iloc[0]
 
         # Initialize registry
-        EnhancedCheckpointRegistry.initialize_enhanced_defaults()
+        CheckpointRegistry.initialize_defaults()
 
         # Execute all checks
-        results = EnhancedCheckpointRegistry.execute_all_enhanced_checks(row, today)
+        results = CheckpointRegistry.execute_all_checks(row, today)
 
         self.assertEqual(results["tool_number"], "T001")
         self.assertEqual(results["tool_column"], "ProjectA")
