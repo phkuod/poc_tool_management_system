@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
 from vendor_rules import VendorRuleRegistry
+from enhanced_vendor_rules import EnhancedVendorRuleRegistry
 
 
 class CheckpointStrategy(ABC):
