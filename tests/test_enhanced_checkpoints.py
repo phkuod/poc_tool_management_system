@@ -122,7 +122,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
         # Test execution (will fail because no actual packages exist)
         row = self.test_df.iloc[0]
-        failures = checkpoint.execute_check(row, today)
+        failures = checkpoint.execute_detailed_check(row, today)
         self.assertEqual(len(failures), 1)
         self.assertEqual(failures[0]['Tool_Number'], 'T001')
         self.assertEqual(failures[0]['Fail Reason'], 'Package not found')
@@ -140,7 +140,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
 
         # Test execution with enhanced validation
         row = self.test_df.iloc[0]  # T001, should trigger final report check
-        enhanced_result = checkpoint.execute_check(row, today)
+        enhanced_result = checkpoint.execute_detailed_check(row, today)
 
         self.assertEqual(enhanced_result["checkpoint_name"], "Enhanced Final Report")
         self.assertEqual(enhanced_result["tool_number"], "T001")
@@ -233,7 +233,7 @@ class TestEnhancedCheckpoints(unittest.TestCase):
         today = datetime.now()
         row = self.test_df.iloc[0]
 
-        enhanced_result = checkpoint.execute_check(row, today)
+        enhanced_result = checkpoint.execute_detailed_check(row, today)
 
         self.assertIn("execution_time", enhanced_result)
         self.assertIsInstance(enhanced_result["execution_time"], float)
@@ -242,14 +242,14 @@ class TestEnhancedCheckpoints(unittest.TestCase):
     def test_checkpoint_error_handling(self):
         """Test checkpoint error handling."""
         class FailingCheckpoint(FinalReportCheckpoint):
-            def execute_check(self, row, today):
+            def execute_detailed_check(self, row, today):
                 raise ValueError("Test error")
 
         checkpoint = FailingCheckpoint()
         today = datetime.now()
         row = self.test_df.iloc[0]
 
-        enhanced_result = checkpoint.execute_check(row, today)
+        enhanced_result = checkpoint.execute_detailed_check(row, today)
 
         self.assertTrue(enhanced_result["executed"])
         self.assertFalse(enhanced_result["success"])

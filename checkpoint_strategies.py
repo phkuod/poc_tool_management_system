@@ -29,9 +29,9 @@ class CheckpointStrategy(ABC):
         """Execute the checkpoint logic and return list of failures."""
         pass
 
-    def execute_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
+    def execute_detailed_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
         """
-        Execute enhanced checkpoint with detailed reporting.
+        Execute checkpoint with detailed reporting.
 
         Args:
             row: DataFrame row with validation data
@@ -321,7 +321,7 @@ class CheckpointRegistry:
         }
 
         for checkpoint in cls.get_all_checkpoints():
-            checkpoint_result = checkpoint.execute_check(row, today)
+            checkpoint_result = checkpoint.execute_detailed_check(row, today)
             results["checkpoints"].append(checkpoint_result)
 
             if checkpoint_result["executed"]:
