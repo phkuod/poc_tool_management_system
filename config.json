@@ -1,3 +1,64 @@
 {
-    "target_path": "C:/Users/phkuo/workspace/tool_management/target"
+    "target_path": "C:/Users/phkuo/workspace/tool_management/target",
+    "paths": {
+        "source_root": "C:/Users/phkuo/workspace/tool_management/source",
+        "target_root": "C:/Users/phkuo/workspace/tool_management/target"
+    },
+    "vendors": {
+        "vendor_a": {
+            "archive_config": {
+                "source_archive_regex": "{source_root}/{tool_column}/source_{tool_number}_.*\\.tar\\.gz$",
+                "target_archive_regex": "{target_root}/{tool_column}/target_{tool_number}_.*\\.tar\\.gz$",
+                "consistency_check": {
+                    "enabled": true,
+                    "file_extension": "rctl"
+                }
+            },
+            "required_patterns": [
+                "Report_{tool_number}_.*\\.xlsx$",
+                "Summary_{tool_number}_.*\\.pdf$",
+                "Config_{tool_number}_.*\\.aaa$"
+            ],
+            "bypass_rules": {
+                "technology_threshold": 5,
+                "bypass_patterns": [".aaa$"]
+            }
+        },
+        "vendor_b": {
+            "archive_config": {
+                "source_archive_regex": "{source_root}/packages/pkg_{tool_number}_v\\d+\\.tar\\.gz$",
+                "target_archive_regex": "{target_root}/deliveries/{tool_column}/final_{tool_number}_.*\\.tar\\.gz$",
+                "consistency_check": {
+                    "enabled": true,
+                    "file_extension": "config"
+                }
+            },
+            "required_patterns": [
+                "Final_{tool_number}_.*\\.pdf$",
+                "Specs_{tool_number}_.*\\.docx$"
+            ],
+            "bypass_rules": {
+                "technology_threshold": 3,
+                "bypass_patterns": [".docx$"]
+            }
+        },
+        "vendor_c": {
+            "archive_config": {
+                "source_archive_regex": "{source_root}/builds/{tool_column}/build_{tool_number}_.*\\.tar\\.gz$",
+                "target_archive_regex": "{target_root}/releases/{tool_column}/release_{tool_number}_.*\\.tar\\.gz$",
+                "consistency_check": {
+                    "enabled": true,
+                    "file_extension": "spec"
+                }
+            },
+            "required_patterns": [
+                "Manual_{tool_number}_.*\\.pdf$",
+                "License_{tool_number}_.*\\.txt$"
+            ],
+            "bypass_rules": {
+                "technology_threshold": 7,
+                "bypass_patterns": [".txt$"]
+            }
+        }
+    }
 }
