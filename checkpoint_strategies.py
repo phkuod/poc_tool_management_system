@@ -1,234 +1,61 @@
 """
-Enhanced checkpoint strategies with DataFrame integration and comprehensive vendor validation.
-Extends existing checkpoint system to support enhanced vendor rules with detailed reporting.
+Checkpoint strategies with DataFrame integration and comprehensive vendor validation.
+Provides checkpoint system with vendor rules and detailed reporting.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from dataclasses import dataclass, field
 import pandas as pd
 from datetime import datetime, timedelta
 from pathlib import Path
+import time
 
 from vendor_rules import VendorRuleRegistry
 
 
-class CheckpointStrategy(ABC):
-    """Checkpoint strategy with detailed reporting and DataFrame integration."""
+class VendorValidator:
+    """Simple vendor validation logic extracted for reusability."""
 
-    def __init__(self, name: str, priority: int = 0):
-        self.name = name
-        self.priority = priority
-
-    @abstractmethod
-    def should_check(self, row: pd.Series, today: datetime) -> bool:
-        """Determine if this checkpoint should be evaluated for the given row."""
-        pass
-
-    @abstractmethod
-    def execute_check(self, row: pd.Series, today: datetime) -> List[Dict[str, Any]]:
-        """Execute the checkpoint logic and return list of failures."""
-        pass
-
-    def execute_detailed_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
-        """
-        Execute checkpoint with detailed reporting.
-
-        Args:
-            row: DataFrame row with validation data
-            today: Current date for validation
-
-        Returns:
-            Detailed checkpoint result with comprehensive information
-        """
-        should_check = self.should_check(row, today)
-
-        result = {
-            "checkpoint_name": self.name,
-            "tool_number": row['Tool_Number'],
-            "tool_column": row['Tool Column'],
-            "should_check": should_check,
-            "executed": False,
-            "success": False,
-            "failures": [],
-            "detailed_result": None,
-            "execution_time": None
-        }
-
-        if should_check:
-            import time
-            start_time = time.time()
-
-            try:
-                failures = self.execute_check(row, today)
-                result["executed"] = True
-                result["success"] = len(failures) == 0
-                result["failures"] = failures
-                result["execution_time"] = time.time() - start_time
-
-            except Exception as e:
-                result["executed"] = True
-                result["success"] = False
-                result["failures"] = [{
-                    'Tool_Number': row['Tool_Number'],
-                    'Project': row['Tool Column'],
-                    'Fail Reason': f'Checkpoint execution error: {str(e)}',
-                    'Responsible User': row.get('Responsible User', 'Unknown')
-                }]
-                result["execution_time"] = time.time() - start_time
-
-        return result
-
-
-class PackageReadinessCheckpoint(CheckpointStrategy):
-    """Enhanced package readiness checkpoint with detailed validation."""
-
-    def __init__(self):
-        super().__init__("Enhanced Package Readiness", priority=1)
-
-    def should_check(self, row: pd.Series, today: datetime) -> bool:
-        return today >= row['Project Start Date'] + pd.Timedelta(days=3)
-
-    def execute_check(self, row: pd.Series, today: datetime) -> List[Dict[str, Any]]:
-        tool_column = row['Tool Column']
-        tool_number = row['Tool_Number']
-        target_path = Path(f"Target/Path/{tool_column}")
-
-        if not any(target_path.glob(f"*{tool_number}*")):
-            return [{
-                'Tool_Number': tool_number,
-                'Project': tool_column,
-                'Fail Reason': 'Package not found',
-                'Responsible User': row['Responsible User'],
-                'Checkpoint': self.name
-            }]
-        return []
-
-
-class FinalReportCheckpoint(CheckpointStrategy):
-    """Enhanced final report checkpoint with comprehensive vendor validation."""
-
-    def __init__(self):
-        super().__init__("Enhanced Final Report", priority=2)
-
-    def should_check(self, row: pd.Series, today: datetime) -> bool:
-        return (row['Customer schedule'] - today).days <= 5
-
-    def execute_check(self, row: pd.Series, today: datetime) -> List[Dict[str, Any]]:
-        tool_column = row['Tool Column']
-        tool_number = row['Tool_Number']
-
-        # Get vendor key and validate it exists
+    def validate(self, row: pd.Series) -> List[str]:
+        """Validate vendor rules for a tool row."""
         vendor_key = self._get_vendor_key(row)
         if vendor_key is None:
-            return [{
-                'Tool_Number': tool_number,
-                'Project': tool_column,
-                'Vendor': str(row.get('Vendor', 'MISSING')),
-                'Fail Reason': 'Unsupported vendor or missing vendor information',
-                'Responsible User': row['Responsible User'],
-                'Checkpoint': self.name
-            }]
+            return ['Unsupported vendor or missing vendor information']
 
-        # Try enhanced vendor rule first
-        enhanced_rule = VendorRuleRegistry.get_rule(vendor_key)
-        if enhanced_rule:
-            return self._execute_enhanced_vendor_check(enhanced_rule, row)
+        vendor_rule = VendorRuleRegistry.get_rule(vendor_key)
+        if vendor_rule:
+            return self._execute_vendor_check(vendor_rule, row)
         else:
-            # Fallback to legacy vendor rule
-            return self._execute_legacy_vendor_check(vendor_key, row)
+            return self._execute_fallback_vendor_check(vendor_key, row)
 
-    def execute_check(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
-        """
-        Execute enhanced checkpoint with comprehensive vendor validation.
+    def _get_vendor_key(self, row: pd.Series) -> Optional[str]:
+        """Get vendor key from row, validate it exists in registry."""
+        if 'Vendor' not in row or pd.isna(row['Vendor']):
+            return None
 
-        Args:
-            row: DataFrame row with validation data
-            today: Current date for validation
+        vendor_key = str(row['Vendor']).lower()
+        if vendor_key in VendorRuleRegistry.list_vendors():
+            return vendor_key
+        return None
 
-        Returns:
-            Detailed checkpoint result with vendor validation details
-        """
-        base_result = super().execute_check(row, today)
-
-        if base_result["should_check"] and base_result["executed"]:
-            vendor_key = self._get_vendor_key(row)
-            enhanced_rule = VendorRuleRegistry.get_rule(vendor_key)
-
-            if enhanced_rule:
-                # Add detailed vendor validation result
-                try:
-                    detailed_result = enhanced_rule.check_final_report_from_dataframe(row)
-                    base_result["detailed_result"] = detailed_result
-                    base_result["vendor_validation"] = {
-                        "vendor": vendor_key,
-                        "enhanced_validation": True,
-                        "validation_steps": detailed_result.get("steps", {}),
-                        "statistics": detailed_result.get("statistics", {}),
-                        "pattern_results": detailed_result.get("pattern_results", [])
-                    }
-                except Exception as e:
-                    base_result["vendor_validation"] = {
-                        "vendor": vendor_key,
-                        "enhanced_validation": False,
-                        "error": str(e)
-                    }
-
-        return base_result
-
-    def _execute_enhanced_vendor_check(self, enhanced_rule, row: pd.Series) -> List[Dict[str, Any]]:
-        """Execute enhanced vendor rule validation."""
+    def _execute_vendor_check(self, vendor_rule, row: pd.Series) -> List[str]:
+        """Execute vendor rule validation."""
         try:
-            result = enhanced_rule.check_final_report_from_dataframe(row)
-
+            result = vendor_rule.check_final_report_from_dataframe(row)
             if not result["success"]:
-                # Create failure entry with detailed information
-                failure_details = {
-                    'Tool_Number': row['Tool_Number'],
-                    'Project': row['Tool Column'],
-                    'Vendor': result["vendor"],
-                    'Fail Reason': self._format_enhanced_fail_reason(result),
-                    'Responsible User': row['Responsible User'],
-                    'Checkpoint': self.name,
-                    'Enhanced_Validation': True,
-                    'Validation_Details': result
-                }
-                return [failure_details]
-
+                return [self._format_fail_reason(result)]
         except Exception as e:
-            return [{
-                'Tool_Number': row['Tool_Number'],
-                'Project': row['Tool Column'],
-                'Vendor': enhanced_rule.vendor_key,
-                'Fail Reason': f'Enhanced validation error: {str(e)}',
-                'Responsible User': row['Responsible User'],
-                'Checkpoint': self.name,
-                'Enhanced_Validation': False
-            }]
-
+            return [f'Vendor validation error: {str(e)}']
         return []
 
-    def _execute_legacy_vendor_check(self, vendor_key: str, row: pd.Series) -> List[Dict[str, Any]]:
-        """Execute legacy vendor rule validation."""
-        tool_column = row['Tool Column']
-        tool_number = row['Tool_Number']
+    def _execute_fallback_vendor_check(self, vendor_key: str, row: pd.Series) -> List[str]:
+        """Execute fallback vendor rule validation."""
+        # This would need config injection for target_path
+        return [f'No validation rule found for vendor: {vendor_key}']
 
-        target_path = Path(f"Target/Path/{tool_column}")
-        rule = VendorRuleRegistry.get_rule(vendor_key)
-
-        if not rule.check_final_report(tool_column, tool_number, target_path):
-            return [{
-                'Tool_Number': tool_number,
-                'Project': tool_column,
-                'Vendor': vendor_key,
-                'Fail Reason': rule.get_fail_reason(),
-                'Responsible User': row['Responsible User'],
-                'Checkpoint': self.name,
-                'Enhanced_Validation': False
-            }]
-        return []
-
-    def _format_enhanced_fail_reason(self, result: Dict[str, Any]) -> str:
-        """Format detailed fail reason from enhanced validation result."""
+    def _format_fail_reason(self, result: dict) -> str:
+        """Format detailed fail reason from vendor validation result."""
         failed_steps = []
         steps = result.get("steps", {})
 
@@ -237,11 +64,10 @@ class FinalReportCheckpoint(CheckpointStrategy):
                 failed_steps.append(f"{step_name}: {step_result.get('message', 'Failed')}")
 
         if failed_steps:
-            base_reason = f"Enhanced validation failed - {', '.join(failed_steps)}"
+            base_reason = f"Validation failed - {', '.join(failed_steps)}"
         else:
-            base_reason = "Enhanced validation failed"
+            base_reason = "Validation failed"
 
-        # Add statistics information
         stats = result.get("statistics", {})
         if stats.get("total_patterns", 0) > 0:
             passing_rate = stats.get("passing_rate", 0)
@@ -249,67 +75,168 @@ class FinalReportCheckpoint(CheckpointStrategy):
 
         return base_reason
 
-    def _get_vendor_key(self, row: pd.Series) -> str:
-        """Get vendor key from row, validate it exists in registry, return None if invalid"""
-        if 'Vendor' not in row or pd.isna(row['Vendor']):
-            return None
 
-        vendor_key = str(row['Vendor']).lower()
+@dataclass
+class CheckpointResult:
+    """Simple, extensible result object for checkpoint validation."""
+    name: str
+    tool_number: str
+    tool_column: str
+    success: bool
+    failures: List[str] = field(default_factory=list)
+    execution_time: float = 0.0
+    executed: bool = False
 
-        # Check if vendor exists in enhanced or legacy registry
-        if vendor_key in VendorRuleRegistry.list_vendors():
-            return vendor_key
-        elif vendor_key in VendorRuleRegistry.list_vendors():
-            return vendor_key
-        else:
-            return None
+    def add_failure(self, reason: str):
+        """Add a failure reason and mark as unsuccessful."""
+        self.failures.append(reason)
+        self.success = False
 
 
-class CheckpointRegistry:
-    """Registry for enhanced checkpoint strategies."""
+@dataclass
+class CheckpointConfig:
+    """Simple configuration for checkpoint strategies."""
+    target_path_template: str = "Target/Path/{tool_column}"
 
-    _enhanced_checkpoints: List[CheckpointStrategy] = []
+    def target_path_for(self, tool_column: str) -> Path:
+        """Get target path for a given tool column."""
+        return Path(self.target_path_template.format(tool_column=tool_column))
 
-    @classmethod
-    def register(cls, checkpoint: CheckpointStrategy):
-        """Register an enhanced checkpoint strategy."""
-        cls._enhanced_checkpoints.append(checkpoint)
-        cls._enhanced_checkpoints.sort(key=lambda x: x.priority)
 
-    @classmethod
-    def unregister(cls, checkpoint_name: str):
-        """Remove an enhanced checkpoint by name."""
-        cls._enhanced_checkpoints = [cp for cp in cls._enhanced_checkpoints if cp.name != checkpoint_name]
+class CheckpointStrategy(ABC):
+    """Checkpoint strategy with detailed reporting and DataFrame integration."""
 
-    @classmethod
-    def get_all_checkpoints(cls) -> List[CheckpointStrategy]:
-        """Get all registered enhanced checkpoints sorted by priority."""
-        return cls._enhanced_checkpoints.copy()
+    def __init__(self, name: str, config: Optional[CheckpointConfig] = None, priority: int = 0):
+        self.name = name
+        self.config = config or CheckpointConfig()
+        self.priority = priority
 
-    @classmethod
-    def clear(cls):
-        """Clear all registered enhanced checkpoints."""
-        cls._enhanced_checkpoints.clear()
+    @abstractmethod
+    def should_validate(self, row: pd.Series, today: datetime) -> bool:
+        """Determine if this checkpoint should be evaluated for the given row."""
+        pass
 
-    @classmethod
-    def initialize_defaults(cls):
-        """Initialize with enhanced default checkpoints."""
-        cls.clear()
-        cls.register(PackageReadinessCheckpoint())
-        cls.register(FinalReportCheckpoint())
-
-    @classmethod
-    def execute_all_checks(cls, row: pd.Series, today: datetime) -> Dict[str, Any]:
+    @abstractmethod
+    def validate_business_rules(self, row: pd.Series) -> List[str]:
         """
-        Execute all enhanced checkpoints for a given row.
+        Execute the core business logic validation.
+
+        Args:
+            row: DataFrame row with validation data
+
+        Returns:
+            List of failure reasons (empty list if validation passes)
+        """
+        pass
+
+    def execute_check(self, row: pd.Series, today: datetime) -> CheckpointResult:
+        """
+        Template method that handles infrastructure and delegates to business logic.
 
         Args:
             row: DataFrame row with validation data
             today: Current date for validation
 
         Returns:
-            Comprehensive results from all checkpoints
+            Clean checkpoint result object
         """
+        should_check = self.should_validate(row, today)
+        tool_column = row['Tool Column']
+        tool_number = row['Tool_Number']
+
+        result = CheckpointResult(
+            name=self.name,
+            tool_number=tool_number,
+            tool_column=tool_column,
+            success=True
+        )
+
+        if should_check:
+            start_time = time.time()
+
+            try:
+                failures = self.validate_business_rules(row)
+                result.failures = failures
+                result.success = len(failures) == 0
+                result.executed = True
+                result.execution_time = time.time() - start_time
+
+            except Exception as e:
+                result.executed = True
+                result.add_failure(f'{self.name} execution error: {str(e)}')
+                result.execution_time = time.time() - start_time
+
+        return result
+
+
+
+class PackageReadinessCheckpoint(CheckpointStrategy):
+    """Package readiness checkpoint with detailed validation."""
+
+    def __init__(self, config: Optional[CheckpointConfig] = None):
+        super().__init__("Package Readiness", config, priority=1)
+
+    def should_validate(self, row: pd.Series, today: datetime) -> bool:
+        return today >= row['Project Start Date'] + pd.Timedelta(days=3)
+
+    def validate_business_rules(self, row: pd.Series) -> List[str]:
+        tool_column = row['Tool Column']
+        tool_number = row['Tool_Number']
+
+        target_path = self.config.target_path_for(tool_column)
+
+        if not any(target_path.glob(f"*{tool_number}*")):
+            return ['Package not found']
+
+        return []
+
+
+class FinalReportCheckpoint(CheckpointStrategy):
+    """Final report checkpoint with clean vendor validation."""
+
+    def __init__(self, config: Optional[CheckpointConfig] = None, vendor_validator: Optional[VendorValidator] = None):
+        super().__init__("Final Report", config, priority=2)
+        self.vendor_validator = vendor_validator or VendorValidator()
+
+    def should_validate(self, row: pd.Series, today: datetime) -> bool:
+        return (row['Customer schedule'] - today).days <= 5
+
+    def validate_business_rules(self, row: pd.Series) -> List[str]:
+        """Simple delegation to vendor validator."""
+        return self.vendor_validator.validate(row)
+
+
+
+
+
+
+
+class CheckpointRegistry:
+    """Simple registry for checkpoint strategies."""
+
+    def __init__(self):
+        """Initialize empty registry."""
+        self._checkpoints: List[CheckpointStrategy] = []
+
+    def add(self, checkpoint: CheckpointStrategy):
+        """Register a checkpoint strategy."""
+        self._checkpoints.append(checkpoint)
+        self._checkpoints.sort(key=lambda x: x.priority)
+
+    def remove(self, checkpoint_name: str):
+        """Remove a checkpoint by name."""
+        self._checkpoints = [cp for cp in self._checkpoints if cp.name != checkpoint_name]
+
+    def list(self) -> List[CheckpointStrategy]:
+        """Get all registered checkpoints sorted by priority."""
+        return self._checkpoints.copy()
+
+    def clear(self):
+        """Clear all registered checkpoints."""
+        self._checkpoints.clear()
+
+    def run_all_checks(self, row: pd.Series, today: datetime) -> Dict[str, Any]:
+        """Execute all checkpoints for a given row."""
         results = {
             "tool_number": row['Tool_Number'],
             "tool_column": row['Tool Column'],
@@ -320,19 +247,24 @@ class CheckpointRegistry:
             "executed_checkpoints": 0
         }
 
-        for checkpoint in cls.get_all_checkpoints():
-            checkpoint_result = checkpoint.execute_detailed_check(row, today)
+        for checkpoint in self.list():
+            checkpoint_result = checkpoint.execute_check(row, today)
             results["checkpoints"].append(checkpoint_result)
 
-            if checkpoint_result["executed"]:
+            if checkpoint_result.executed:
                 results["executed_checkpoints"] += 1
 
-            if not checkpoint_result["success"]:
+            if not checkpoint_result.success:
                 results["overall_success"] = False
-                results["total_failures"] += len(checkpoint_result.get("failures", []))
+                results["total_failures"] += len(checkpoint_result.failures)
 
         return results
 
+    @staticmethod
+    def create_default(config: Optional[CheckpointConfig] = None) -> 'CheckpointRegistry':
+        """Factory method to create registry with default checkpoints."""
+        registry = CheckpointRegistry()
+        registry.add(PackageReadinessCheckpoint(config))
+        registry.add(FinalReportCheckpoint(config))
+        return registry
 
-# Initialize enhanced checkpoint registry with defaults
-CheckpointRegistry.initialize_defaults()
