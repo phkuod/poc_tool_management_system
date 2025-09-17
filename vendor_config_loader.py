@@ -145,7 +145,16 @@ class VendorConfigLoader:
 
         if cache_key not in self._compiled_patterns:
             try:
-                formatted_pattern = pattern.format(**kwargs)
+                # Normalize paths for regex compatibility (convert backslashes to forward slashes)
+                normalized_kwargs = {}
+                for key, value in kwargs.items():
+                    if isinstance(value, str):
+                        # Convert Windows paths to forward slashes for regex compatibility
+                        normalized_kwargs[key] = value.replace('\\', '/')
+                    else:
+                        normalized_kwargs[key] = value
+
+                formatted_pattern = pattern.format(**normalized_kwargs)
                 compiled_pattern = re.compile(formatted_pattern)
                 self._compiled_patterns[cache_key] = compiled_pattern
             except (KeyError, re.error) as e:

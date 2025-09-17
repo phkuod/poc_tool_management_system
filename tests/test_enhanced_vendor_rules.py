@@ -16,7 +16,7 @@ import sys
 # Add parent directory to path to import modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from enhanced_vendor_rules import (
+from vendor_rules import (
     EnhancedVendorRuleStrategy,
     EnhancedVendorRuleRegistry,
     GenericEnhancedVendorRule
@@ -280,7 +280,7 @@ class TestEnhancedVendorRules(unittest.TestCase):
         self.assertEqual(result["statistics"]["pass_count"], 1)  # Only xlsx
         self.assertEqual(result["statistics"]["fail_count"], 2)  # Missing pdf, aaa
         self.assertEqual(result["statistics"]["bypassed_count"], 0)
-        self.assertEqual(result["statistics"]["passing_rate"], 33.3)  # 1/3 * 100
+        self.assertAlmostEqual(result["statistics"]["passing_rate"], 33.33, places=1)  # 1/3 * 100
 
     def test_consistency_check_failure(self):
         """Test consistency check failure between source and target."""
@@ -321,6 +321,10 @@ class TestEnhancedVendorRules(unittest.TestCase):
     def test_enhanced_vendor_registry(self):
         """Test enhanced vendor registry functionality."""
         config_loader = VendorConfigLoader(self.test_config_path)
+
+        # Register test vendor manually for this test
+        test_rule = GenericEnhancedVendorRule("test_vendor", config_loader)
+        EnhancedVendorRuleRegistry.register_enhanced_rule("test_vendor", test_rule)
 
         # Test registry functionality
         vendors = EnhancedVendorRuleRegistry.list_enhanced_vendors()

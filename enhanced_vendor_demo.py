@@ -12,8 +12,8 @@ import pandas as pd
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from enhanced_vendor_rules import EnhancedVendorRuleRegistry, GenericEnhancedVendorRule
-from enhanced_outsourcing_qc_check_points import EnhancedOutsourcingQcCheckPoints
+from vendor_rules import EnhancedVendorRuleRegistry, GenericEnhancedVendorRule
+from outsourcing_qc_check_points import EnhancedOutsourcingQcCheckPoints
 from vendor_config_loader import VendorConfigLoader
 
 
